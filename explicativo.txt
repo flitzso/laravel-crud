@@ -1,0 +1,262 @@
+ -----------------
+| Criando projeto |
+ -----------------
+
+ composer create-project laravel/laravel laravel-10-crud
+
+ ---------------
+| Banco de Dados |
+ ---------------
+
+ DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=laravel_10_db
+DB_USERNAME=user
+DB_PASSWORD=senha
+
+ --------------
+| Criando Model |
+ --------------
+
+ php artisan make:model Contact -m
+
+ <?php
+
+namespace App\Models;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class Contact extends Model
+{
+    use HasFactory;
+    protected $fillable = [
+        'name',
+        'email',
+        'phone',
+    ];
+}
+
+ -------------------
+| Table no Migration|
+ -------------------
+// Siga a ordem se nao o banco vai ser criado com dados errados padroes.
+
+ 2023_04_11_071146_create_contacts_table.php
+
+ <?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('contacts', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->string('phone');
+            $table->string('email');
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('contacts');
+    }
+};
+
+Php artisan migrate
+
+ ------------------
+| Crinado Controller|
+ ------------------
+
+ php artisan make:controller ContactController
+
+ <?php
+
+namespace App\Http\Controllers;
+use Illuminate\Http\Request;
+use App\Models\Contact;
+
+class ContactController extends Controller
+{
+    public function index(Request $req){
+        $contact = Contact::all();
+        return  view('welcome')->with("contact",$contact);
+    }
+    public function add(Request $req){
+        $contact = new Contact;
+        $contact->email = $req->email;
+        $contact->phone = $req->phone;
+        $contact->name = $req->name;
+        $contact->save();
+        return redirect()->back();
+    }
+    public function delete(Request $req){
+        $contact = Contact::find($req->id);
+        $contact->delete();
+        return redirect()->back();
+    }
+    public function edit(Request $req){
+        $contact = Contact::find($req->id);
+        return view('edit')->with("contact",$contact);
+    }
+    public function update(Request $req){
+        $contact = Contact::find($req->id);
+        $contact->update([
+            'name' => $req->name,
+            'phone' => $req->phone,
+            'email' => $req->email,
+        ]);
+        return redirect()->back();
+    }
+}
+
+ ------------------
+|  resources/views |
+ ------------------
+
+ Welcome.blade.php
+
+ <!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="X-UA-Compatible" content="ie=edge">
+        <title>Phone Book App</title>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet"
+            integrity="sha384-KK94CHFLLe+nY2dmCWGMq91rCGa5gtU4mk92HdvYe+M/SXH301p5ILy+dN9+nJOZ" crossorigin="anonymous">
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-ENjdO4Dr2bkBIFxQpeoTz1HIcje39Wm4jDKdf19U8gI4ddQ3GYNS7NTKfAdVQSZe" crossorigin="anonymous">
+        </script>
+    </head>
+    <body>
+        <div class="container mt-5">
+            <form method="POST" action="/addcontact">
+                @csrf
+                <div class="form-group mb-2">
+                    <label for="exampleInputEmail1">Email address</label>
+                    <input type="email" class="form-control" name="email" placeholder="Enter email">
+                </div>
+                <div class="form-group mb-2">
+                    <label for="exampleInputPassword1">Phone Number</label>
+                    <input type="text" class="form-control" name="phone" placeholder="Phone">
+                </div>
+                <div class="form-group mb-2">
+                    <label for="exampleInputPassword1">Name</label>
+                    <input type="text" class="form-control" name="name" placeholder="Name">
+                </div>
+                <button type="submit" class="btn btn-primary">Submit</button>
+            </form>
+            <table class="table mt-5">
+                <thead>
+                    <tr>
+                        <th scope="col">Id</th>
+                        <th scope="col">Name</th>
+                        <th scope="col">Phone</th>
+                        <th scope="col">Email</th>
+                        <th scope="col">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (count($contact) > 0)
+                        @foreach ($contact as $cont)
+                            <tr>
+                                <th>{{ $cont->id }}</th>
+                                <th>{{ $cont->name }}</th>
+                                <th>{{ $cont->phone }}</th>
+                                <th>{{ $cont->email }}</th>
+                                <th><a href="/edit/{{ $cont->id }}" class="btn btn-primary">Edit</a>
+                                    <a href="/delete/{{ $cont->id }}" class="btn btn-danger">Delete</a>
+                                </th>
+                            </tr>
+                        @endforeach
+                    @else
+                        <tr>
+                            <th>No Data</th>
+                        </tr>
+                    @endif
+                </tbody>
+            </table>
+        </div>
+    </body>
+</html>
+
+ -------------------------
+| resources/views/ folder |
+ -------------------------
+
+ edit.blade.php
+
+ <!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="X-UA-Compatible" content="ie=edge">
+        <title>Phone Book App</title>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet"
+            integrity="sha384-KK94CHFLLe+nY2dmCWGMq91rCGa5gtU4mk92HdvYe+M/SXH301p5ILy+dN9+nJOZ" crossorigin="anonymous">
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-ENjdO4Dr2bkBIFxQpeoTz1HIcje39Wm4jDKdf19U8gI4ddQ3GYNS7NTKfAdVQSZe" crossorigin="anonymous">
+        </script>
+    </head>
+    <body>
+        <div class="container mt-5">
+            <form method="POST" action="/edit/{{$contact->id}}">
+                @csrf
+                <div class="form-group mb-2">
+                    <label for="exampleInputEmail1">Email address</label>
+                    <input type="email" class="form-control" name="email" placeholder="Enter email" value="{{$contact->email}}">
+                </div>
+                <div class="form-group mb-2">
+                    <label for="exampleInputPassword1">Phone Number</label>
+                    <input type="text" class="form-control" name="phone" placeholder="Phone" value="{{$contact->phone}}">
+                </div>
+                <div class="form-group mb-2">
+                    <label for="exampleInputPassword1">Name</label>
+                    <input type="text" class="form-control" name="name" placeholder="Name" value="{{$contact->name}}">
+                </div>
+                <button type="submit" class="btn btn-primary">Update</button>
+            </form>
+        </div>
+    </body>
+</html>
+
+ -------------
+|Web.php ROTAS|
+ -------------
+
+ <?php
+
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\ContactController;
+
+/*
+|--------------------------------------------------------------------------
+| Web Routes
+|--------------------------------------------------------------------------
+|
+| Here is where you can register web routes for your application. These
+| routes are loaded by the RouteServiceProvider and all of them will
+| be assigned to the "web" middleware group. Make something great!
+|
+*/
+
+Route::get('/', [ContactController::class, 'index']);
+Route::post('/addcontact', [ContactController::class, 'add']);
+Route::get('/delete/{id}', [ContactController::class, 'delete']);
+Route::get('/edit/{id}', [ContactController::class, 'edit']);
+Route::post('/edit/{id}', [ContactController::class, 'update']);
